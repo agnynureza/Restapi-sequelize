@@ -25,7 +25,10 @@ async function handleParams(){
             nMonthlyIncome = monthlyIncomeMax - monthlyIncomeMin
         return  range = {nAge,nLatitude,nLongitude, nMonthlyIncome, ageMax,longitudeMax,latitudeMax,monthlyIncomeMax}
     }catch(err){
-        console.log(err)
+        res.status(500).json({
+            message: `Error handlePrams: ${err}`,
+            peopleLikeYou: []
+        })
     }
 }
 
@@ -80,10 +83,13 @@ async function handleQuery(query){
             person['score'] = score
         })
         result = data.sort(function(a,b){ return b.score - a.score}).slice(0,10)
-        result.map(x=>{return x['score'] < 0.95 ? x['score'] = Number(x['score'].toFixed(1)): ''})
+        result.map(x=>{return Number(x['score']) < 0.95 ? x['score'] = Number(x['score'].toFixed(1)): x['score']= 0.9})
         return result
     }catch(err){
-        console.log(err)
+        res.status(500).json({
+            message: `Error handleQuery:${err}`,
+            peopleLikeYou: []
+        })
     }
 }
 

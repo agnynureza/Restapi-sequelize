@@ -8,6 +8,6 @@ router.get('/', function(req, res, next) {
   res.send('Welcome to Express' );
 });
 
-router.get('/people-like-you', cache, data1)
+router.get('/people-like-you', cache, data)
 
 module.exports = router;

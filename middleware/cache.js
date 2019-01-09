@@ -7,10 +7,10 @@ const cache = (req,res,next) => {
     let parse = JSON.parse(found)
     if (parse) {
       let info
-      parse.length > 0 ? info ="Get data from redis" : info = "Data not found"
+      parse.length > 0 ? info ="Data found" : info = "Data not found"
         res.status(200).json({
           message: info,
-          data: parse
+          peopleLikeYou: parse
         })
       return
     }else{
