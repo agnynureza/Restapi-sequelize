@@ -6,7 +6,7 @@ const cache = (req,res,next) => {
     client.get(`bambu:${params}`, (err,found) => {
     if (found) {
       res.status(200).json({
-        message: `Get data success`,
+        message: `Get data from redis success`,
         data: JSON.parse(found)
       })
       return

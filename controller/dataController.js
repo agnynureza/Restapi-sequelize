@@ -26,7 +26,6 @@ class People{
                let nMonthlyIncome = monthlyIncomeMax - monthlyIncomeMin
                Data.findAll({
                    raw:true,
-                   limit:10,
                    attributes: ['name', 'age', 'latitude', 'longitude', 'monthlyIncome', 'experienced']
                }).then(temp =>{
                    temp.map(x=>{
@@ -66,7 +65,7 @@ class People{
                    })
                    let result = temp.sort(function(a,b){ return b.score - a.score}).slice(0,10)
                    client.set(`bambu:${JSON.stringify(query)}`, JSON.stringify(result))
-                   client.expire(key, 60)
+                   client.expire(`bambu:${JSON.stringify(query)}`, 60)
                    
                    resolve(result)
                })
