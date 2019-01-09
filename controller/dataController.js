@@ -3,7 +3,7 @@ const sequelize = require('sequelize')
 const redis = require('redis')
 const client = redis.createClient()
 
-async function handleParams(){
+async function handleParams(req,res){
     try{
         let params =  await Data.findAll({
             raw:true,
@@ -18,12 +18,7 @@ async function handleParams(){
                 [sequelize.fn('min', sequelize.col('monthlyIncome')), 'monthlyIncomeMin']
             ]
         })
-        let {ageMax,ageMin,latitudeMax,latitudeMin,longitudeMax,longitudeMin,monthlyIncomeMax,monthlyIncomeMin} = params[0],
-            nAge = ageMax - ageMin,
-            nLatitude = latitudeMax - latitudeMin,
-            nLongitude = longitudeMax - longitudeMin,
-            nMonthlyIncome = monthlyIncomeMax - monthlyIncomeMin
-        return  range = {nAge,nLatitude,nLongitude, nMonthlyIncome, ageMax,longitudeMax,latitudeMax,monthlyIncomeMax}
+        return {ageMax,ageMin,latitudeMax,latitudeMin,longitudeMax,longitudeMin,monthlyIncomeMax,monthlyIncomeMin} = params[0] 
     }catch(err){
         res.status(500).json({
             message: `Error handlePrams: ${err}`,
@@ -35,6 +30,7 @@ async function handleParams(){
 async function handleQuery(query){
     try{
         let params = await handleParams()
+        let {ageMax,ageMin,latitudeMax,latitudeMin,longitudeMax,longitudeMin,monthlyIncomeMax,monthlyIncomeMin} = params
         let data = await Data.findAll({
             raw:true,
             attributes: ['name', 'age', 'latitude', 'longitude', 'monthlyIncome', 'experienced']
@@ -47,19 +43,19 @@ async function handleQuery(query){
                 length++
                 switch(typeof(key) == 'string'){
                     case key == 'age':
-                        count = algorithm(params.nAge,Number(query[key]),person.age)
+                        Number(query[key]) > ageMax || Number(query[key]) < ageMin ? count = 0 : count = algorithm(ageMax-ageMin,Number(query[key]),person.age)
                         tempScore += count
                         break
                     case key =='latitude':
-                        count = algorithm(params.nLatitude,Number(query[key]),Number(person.latitude))
+                        Number(query[key]) > latitudeMax || Number(query[key]) < latitudeMin ? count = 0 : count = algorithm(latitudeMax-latitudeMin,Number(query[key]),Number(person.latitude))
                         tempScore += count
                         break
                     case key == 'longitude':
-                        count = algorithm(params.nLongitude,Number(query[key]),Number(person.longitude)) 
+                        Number(query[key]) > longitudeMax || Number(query[key]) < longitudeMin ? count = 0 : count = algorithm(longitudeMax-longitudeMin,Number(query[key]),Number(person.longitude)) 
                         tempScore += count  
                         break
                     case key == 'monthlyIncome':
-                        count = algorithm(params.nMonthlyIncome,Number(query[key]),Number(person.monthlyIncome))
+                        Number(query[key]) > monthlyIncomeMax || Number(query[key]) < monthlyIncomeMin ? count = 0 : count = algorithm(monthlyIncomeMax-monthlyIncomeMin,Number(query[key]),Number(person.monthlyIncome))
                         tempScore += count
                         break
                     case key == 'experienced':
@@ -83,13 +79,10 @@ async function handleQuery(query){
             person['score'] = score
         })
         result = data.sort(function(a,b){ return b.score - a.score}).slice(0,10)
-        result.map(x=>{return Number(x['score']) < 0.95 ? x['score'] = Number(x['score'].toFixed(1)): x['score']= 0.9})
+        result.map(x=>{return x['score'] < 0.95 ? x['score'] = Number(x['score'].toFixed(1)): x['score'] == 1 ? '' : x['score']= Number((x['score']-0.05).toFixed(1))})
         return result
     }catch(err){
-        res.status(500).json({
-            message: `Error handleQuery:${err}`,
-            peopleLikeYou: []
-        })
+        console.log(err)
     }
 }
 
