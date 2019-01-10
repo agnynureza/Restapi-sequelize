@@ -26,8 +26,7 @@ module.exports = {
         obj.createdAt = new Date()
         obj.updatedAt = new Date()
         result.push(obj) 
-   }
-   console.log(result)
+   } 
    return queryInterface.bulkInsert('Data', result, {})
   },
 
