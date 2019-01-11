@@ -31,7 +31,7 @@ async function handleQuery(query){
             raw:true,
             attributes: ['name', 'age', 'latitude', 'longitude', 'monthlyIncome', 'experienced']
         })
-        data.map(person => {
+        for(let person = 0 ; person < data.length ; person++){
             let tempScore = 0
             let length = 0
             for(let key in query){
@@ -39,19 +39,19 @@ async function handleQuery(query){
                 length++
                 switch(typeof(key) == 'string'){
                     case key == 'age':
-                        count = algorithm(rangeAge,Number(query[key]),person.age)
+                        count = algorithm(rangeAge,Number(query[key]),data[person].age)
                         tempScore += count
                         break
                     case key =='latitude':
-                        count = algorithm(rangeLatitude,Number(query[key]),Number(person.latitude))
+                        count = algorithm(rangeLatitude,Number(query[key]),Number(data[person].latitude))
                         tempScore += count
                         break
                     case key == 'longitude':
-                        count = algorithm(rangeLongitude,Number(query[key]),Number(person.longitude)) 
+                        count = algorithm(rangeLongitude,Number(query[key]),Number(data[person].longitude)) 
                         tempScore += count  
                         break
                     case key == 'monthlyIncome':
-                        count = algorithm(rangeMonthlyIncome,Number(query[key]),person.monthlyIncome)
+                        count = algorithm(rangeMonthlyIncome,Number(query[key]),data[person].monthlyIncome)
                         tempScore += count
                         break
                     case key == 'experienced':
@@ -72,10 +72,10 @@ async function handleQuery(query){
             }
             let score;
             length != 0 ? score = tempScore/length : score = 1
-            person['score'] = score
-        })
+            data[person]['score'] = score
+        }
         result = data.sort(function(a,b){ return b.score - a.score}).slice(0,10)
-        result.map(x=>{return x['score'] < 0.95 ? x['score'] = Number(x['score'].toFixed(1)): x['score'] == 1 ? '' : x['score']= Number((x['score']-0.05).toFixed(1))})
+        result.forEach(x=>{return x['score'] < 0.95 ? x['score'] = Number(x['score'].toFixed(1)): x['score'] == 1 ? '' : x['score']= Number((x['score']-0.05).toFixed(1))})
         return result
     }catch(err){
         console.log(err)
@@ -98,7 +98,7 @@ async function sendAllRespond(req,res){
         let key =`bambu:${JSON.stringify(req.query)}`
         let result = await handleQuery(req.query)
         let check = 0 
-        result.map(x=>{ return check += x['score'] })
+        result.forEach(x=>{ return check += x['score'] })
         client.expire(key, 3600)
         if(check != 0){
             client.set(key, JSON.stringify(result))
