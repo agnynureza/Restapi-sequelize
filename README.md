@@ -19,7 +19,7 @@ $npm test
 #### routes :
 | Route          | HTTP   |            Description              |
 |----------------|--------|-------------------------------------|
-| `/people-like-you`| GET    | Fetch Data                 |
+| `/people-like-you`| GET    | Fetch people data             |
 
 just hit endpoint  ```http://postgres-server.agnynureza.online/people-like-you?age=20?experienced=true``` (optional query parameter)
 

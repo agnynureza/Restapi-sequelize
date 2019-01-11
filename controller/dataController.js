@@ -8,17 +8,13 @@ async function handleParams(req,res){
         let params =  await Data.findAll({
             raw:true,
             attributes: [
-                [sequelize.fn('max', sequelize.col('age')), 'ageMax'],
-                [sequelize.fn('max', sequelize.cast(sequelize.col('latitude'),'decimal')), 'latitudeMax'],
-                [sequelize.fn('max', sequelize.cast(sequelize.col('longitude'),'decimal')), 'longitudeMax'],
-                [sequelize.fn('max', sequelize.col('monthlyIncome')), 'monthlyIncomeMax'],
-                [sequelize.fn('min', sequelize.col('age')), 'ageMin'],
-                [sequelize.fn('min', sequelize.cast(sequelize.col('latitude'),'decimal')), 'latitudeMin'],
-                [sequelize.fn('min', sequelize.cast(sequelize.col('longitude'),'decimal')), 'longitudeMin'],
-                [sequelize.fn('min', sequelize.col('monthlyIncome')), 'monthlyIncomeMin']
-            ]
+                sequelize.literal(
+                `max("age") - min("age") AS "rangeAge", 
+                max(CAST("latitude" AS DECIMAL)) - min(CAST("latitude" AS DECIMAL)) AS "rangeLatitude",
+                max(CAST("longitude" AS DECIMAL)) - min(CAST("longitude" AS DECIMAL)) AS "rangeLongitude", 
+                max("monthlyIncome") - min("monthlyIncome")  AS "rangeMonthlyIncome"`)]
         })
-        return {ageMax,ageMin,latitudeMax,latitudeMin,longitudeMax,longitudeMin,monthlyIncomeMax,monthlyIncomeMin} = params[0] 
+        return {rangeAge,rangeLatitude,rangeLongitude,rangeMonthlyIncome} = params[0] 
     }catch(err){
         res.status(500).json({
             message: `Error handlePrams: ${err}`,
@@ -30,7 +26,7 @@ async function handleParams(req,res){
 async function handleQuery(query){
     try{
         let params = await handleParams()
-        let {ageMax,ageMin,latitudeMax,latitudeMin,longitudeMax,longitudeMin,monthlyIncomeMax,monthlyIncomeMin} = params
+        let {rangeAge,rangeLatitude,rangeLongitude,rangeMonthlyIncome} = params
         let data = await Data.findAll({
             raw:true,
             attributes: ['name', 'age', 'latitude', 'longitude', 'monthlyIncome', 'experienced']
@@ -43,19 +39,19 @@ async function handleQuery(query){
                 length++
                 switch(typeof(key) == 'string'){
                     case key == 'age':
-                        Number(query[key]) > ageMax || Number(query[key]) < ageMin ? count = 0 : count = algorithm(ageMax-ageMin,Number(query[key]),person.age)
+                        count = algorithm(rangeAge,Number(query[key]),person.age)
                         tempScore += count
                         break
                     case key =='latitude':
-                        Number(query[key]) > latitudeMax || Number(query[key]) < latitudeMin ? count = 0 : count = algorithm(latitudeMax-latitudeMin,Number(query[key]),Number(person.latitude))
+                        count = algorithm(rangeLatitude,Number(query[key]),Number(person.latitude))
                         tempScore += count
                         break
                     case key == 'longitude':
-                        Number(query[key]) > longitudeMax || Number(query[key]) < longitudeMin ? count = 0 : count = algorithm(longitudeMax-longitudeMin,Number(query[key]),Number(person.longitude)) 
+                        count = algorithm(rangeLongitude,Number(query[key]),Number(person.longitude)) 
                         tempScore += count  
                         break
                     case key == 'monthlyIncome':
-                        Number(query[key]) > monthlyIncomeMax || Number(query[key]) < monthlyIncomeMin ? count = 0 : count = algorithm(monthlyIncomeMax-monthlyIncomeMin,Number(query[key]),Number(person.monthlyIncome))
+                        count = algorithm(rangeMonthlyIncome,Number(query[key]),person.monthlyIncome)
                         tempScore += count
                         break
                     case key == 'experienced':
@@ -87,6 +83,7 @@ async function handleQuery(query){
 }
 
 function algorithm(range,entry,value){
+    let score;
     if(entry > value){
         score = (range-(entry-value))/range
     }else{
@@ -101,22 +98,21 @@ async function sendAllRespond(req,res){
         let key =`bambu:${JSON.stringify(req.query)}`
         let result = await handleQuery(req.query)
         let check = 0 
-        if(result){
-            result.map(x=>{ return check += x['score'] })
-            check != 0 ? client.set(key, JSON.stringify(result)) : client.set(key, JSON.stringify([]))
-            client.expire(key, 3600)
-            if(check != 0){
-                res.status(200).json({
-                        message: 'Data found',
-                        peopleLikeYou: result
-                })
-            }else{
-                res.status(202).json({
-                    message: `Data not found`,
-                    peopleLikeYou: []
-                })
-            }
-        }    
+        result.map(x=>{ return check += x['score'] })
+        client.expire(key, 3600)
+        if(check != 0){
+            client.set(key, JSON.stringify(result))
+            res.status(200).json({
+                    message: 'Data found',
+                    peopleLikeYou: result
+            })
+        }else{
+            client.set(key, JSON.stringify([]))
+            res.status(202).json({
+                message: `Data not found`,
+                peopleLikeYou: []
+            })
+        }
     }catch(err){
         res.status(500).json({
             message: `data not found, Error:${err}`,
