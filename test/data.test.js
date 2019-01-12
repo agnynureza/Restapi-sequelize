@@ -1,6 +1,8 @@
 const chai = require('chai')
     ,chaiHttp = require('chai-http')
     ,chaiSorted = require('chai-sorted')
+const {algorithm} = require('../helper/algoritm')
+const service = require('../service/top10User')
 
 chai.use(chaiHttp)
 chai.use(chaiSorted)
@@ -33,5 +35,42 @@ describe('Read all data people', ()=> {
                 done()
             }
         })
+    })
+})
+
+describe('algoritm for give score', ()=>{
+    it('should return score when score range in 0 - 1', (done) => {
+        let result = algorithm(100,50,30)
+        expect(result).to.equal(0.8)
+        expect(result).to.be.a('number')
+        done()
+    })
+    it('should return score = 0 when  0>score>1 or NaN', (done)=>{
+        let result = algorithm(100,50,300)
+        expect(result).to.equal(0)
+        expect(result).to.be.a('number')
+        result = algorithm(100,50,NaN)
+        expect(result).to.equal(0)
+        expect(result).to.be.a('number')
+        done()
+    })
+})
+
+describe('relevan user based on score',()=>{
+    it('should be return top 10 relevan user',async ()=>{
+        let result = await service.relevanUser({age:30})
+        expect(result).to.be.an('object')
+        expect(result).to.have.all.keys('result','message', 'statusCode')
+        expect(result.result).to.be.an('array').to.have.lengthOf(10)
+        expect(result).to.have.a.property('message').to.include('Data found')
+        expect(result).to.have.a.property('statusCode').to.equal(200)
+    })
+
+    it('should be return [] and data not found', async () =>{
+        let result = await service.relevanUser({age:500})
+        expect(result).to.be.an('object')
+        expect(result.result).to.be.an('array')
+        expect(result).to.have.a.property('message').to.include('Data not found')
+        expect(result).to.have.a.property('statusCode').to.equal(202)
     })
 })

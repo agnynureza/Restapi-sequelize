@@ -3,8 +3,9 @@ const router = express.Router();
 const cache = require('../middleware/cache')
 const data = require('../controller/dataController')
 
+
 /* GET home page. */
-router.get('/', function(req, res, next) {
+router.get('/', function(req, res) {
   res.send('Welcome to Express' );
 });
 
