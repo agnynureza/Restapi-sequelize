@@ -1,4 +1,4 @@
-const {relevanUser} = require('../service/top10User')
+const {relevanUser} = require('../service/searchPeople')
 
 
 async function sendAllRespond(req,res){

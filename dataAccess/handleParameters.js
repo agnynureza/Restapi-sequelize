@@ -1,7 +1,7 @@
 const {Data} = require('../models')
 const sequelize = require('sequelize')
 
-async function handleParams(req,res){
+async function handleParameters(req,res){
     try{
         let params =  await Data.findAll({
             raw:true,
@@ -24,5 +24,5 @@ async function handleParams(req,res){
     }
 }
 
-module.exports = handleParams 
+module.exports = handleParameters 
 

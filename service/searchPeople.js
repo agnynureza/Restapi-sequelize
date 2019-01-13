@@ -1,11 +1,11 @@
 const {algorithm} = require('../helper/algoritm')
-const handleParams = require('../DataAccess/handleQuery')
+const handleParameters = require('../dataAccess/handleParameters')
 const redis = require('redis')
 const client = redis.createClient()
 
 async function handleQuery(query){
     try{
-        let dataAccess = await handleParams()
+        let dataAccess = await handleParameters()
         let {rangeAge,rangeLatitude,rangeLongitude,rangeMonthlyIncome} = dataAccess.params
         let {data} = dataAccess
         for(let person = 0 ; person < data.length ; person++){
@@ -32,7 +32,7 @@ async function handleQuery(query){
                         tempScore += count
                         break
                     case key == 'experienced':
-                        switch(String(person.experienced) == query[key].toLowerCase()){
+                        switch(String(data[person].experienced) == query[key].toLowerCase()){
                             case true:
                                 tempScore += 1
                                 break
@@ -65,12 +65,11 @@ async function relevanUser (query) {
         let result = await handleQuery(query)
         let check = 0 
         result.forEach(x=>{ return check += x['score'] })
-        client.expire(key, 3600)
         if(check != 0){
-            client.set(key, JSON.stringify(result))
+            client.setex(key, 3600,  JSON.stringify(result) )
             return {result,statusCode:200, message:'Data found'};
         }else{
-            client.set(key, JSON.stringify([]))
+            client.setex(key, 3600, JSON.stringify([]))
             return {result:[],statusCode:202, message:'Data not found'};
         }
     }catch(err){
